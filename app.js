@@ -1,24 +1,30 @@
-const express = require("express");
-const pizzasRouter = require("./routes/pizzas");
-const { notFoundHandler, errorHandler } = require("./middleware/errorHandler");
+require('dotenv').config();
+
+const express = require('express');
+const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+
+const router = require('./routes/router');
+const swaggerSpec = require('./foodtruck-api/config/swagger');
+const { notFoundHandler, errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
 
-// Parsing du JSON envoyé dans le body des requêtes
+app.use(cors());
 app.use(express.json());
 
-// Route de bienvenue - permet de vérifier que l'API écoute
-app.get("/", (req, res) => {
-  res.json({ message: "Welcome to the API" });
+// Documentation interactive Swagger, disponible sur /api-docs
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Toutes les ressources de l'API sont préfixées par /api
+app.use('/api', router);
+
+// Preuve que l'API écoute (critère fonctionnel de l'étape 00)
+app.get('/', (req, res) => {
+    res.status(200).json({ message: 'Welcome to the API' });
 });
 
-// Montage des routes de la ressource "pizzas" sous /api/pizzas
-app.use("/api/pizzas", pizzasRouter);
-
-// 404 pour toute route non définie
 app.use(notFoundHandler);
-
-// Gestion centralisée des erreurs (500)
 app.use(errorHandler);
 
 module.exports = app;

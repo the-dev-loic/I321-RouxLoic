@@ -1,117 +1,139 @@
-# MyAPI — Gestion de la carte des pizzas
+# Foodtruck API — Ressource Pizzas 🍕
 
-API REST permettant au pizzaïolo de gérer la carte des mets (pas de gestion
-de commande). Basée sur Express, architecture en couches : `routes` →
-`controllers` → `models`.
+API REST développée dans le cadre du module **I321 — Programmer des systèmes distribués**
+(CPNV), projet *Foodtruck*.
+
+Elle expose la gestion de la carte des mets (les pizzas) : le pizzaïolo peut lister,
+consulter, ajouter, modifier et supprimer des pizzas. **Il ne s'agit pas d'un système
+de commande.**
+
+Cette ressource remplace la ressource générique `products` fournie comme base du projet
+(étape 00), en respectant la même architecture en couches.
+
+## Stack technique
+
+- **Node.js** + **Express** — serveur HTTP et routage
+- **sqlite3** — base de données embarquée (aucun serveur externe requis)
+- **express-validator** — validation des entrées de la couche présentation
+- **swagger-jsdoc** + **swagger-ui-express** — documentation interactive de l'API
+- Architecture en couches : `routes` (présentation) → `controllers` (métier) → `entities` (données)
 
 ## Installation
 
 ```bash
 npm install
+cp .env.example .env
 ```
 
-## Lancement
+## Lancer le serveur
 
 ```bash
-npm start      # production
-npm run dev    # avec nodemon (rechargement auto)
+npm start
+# ou en mode développement (redémarrage automatique)
+npm run dev
 ```
 
-Le serveur écoute par défaut sur le port `3000` (configurable via `.env`).
+Le serveur démarre par défaut sur `http://localhost:3000`.
+Une base de données SQLite est créée automatiquement dans `./data/foodtruck.sqlite`,
+pré-remplie avec les 3 pizzas de démonstration de l'énoncé.
+
+## Vérifier que ça fonctionne
 
 ```bash
+# Preuve que l'API écoute
 curl localhost:3000
-# {"message":"Welcome to the API"}
+
+# Lister les pizzas
+curl localhost:3000/api/pizzas | jq
 ```
+
+```json
+[
+  {
+    "id": 3,
+    "name": "4 Saisons",
+    "ingredients": "Jambon, Champignons frais, Poivrons, Artichauts, Mozzarella",
+    "imageUrl": "",
+    "price": 17,
+    "created_at": "2025-09-09 08:26:21",
+    "updated_at": "2025-09-09 08:26:21"
+  },
+  {
+    "id": 2,
+    "name": "Margherita",
+    "ingredients": "Mozzarella",
+    "imageUrl": "",
+    "price": 12,
+    "created_at": "2025-09-09 08:26:21",
+    "updated_at": "2025-09-09 08:26:21"
+  },
+  {
+    "id": 1,
+    "name": "Pizza du moment",
+    "ingredients": "Sauce de tomates jaunes, Bresaola, Copeaux de parmesan, Rucola, Tomates cerises, Mozzarella fior di latte",
+    "imageUrl": "https://picsum.photos/200?1",
+    "price": 20,
+    "created_at": "2025-09-09 08:26:21",
+    "updated_at": "2025-09-09 08:26:21"
+  }
+]
+```
+
+Documentation Swagger interactive : [http://localhost:3000/api-docs](http://localhost:3000/api-docs)
 
 ## Structure du projet
 
 ```
-MyAPI/
-├── .env                  // variables d'environnement (PORT, ...)
-├── .gitignore
-├── app.js                // configuration Express + montage des routes
-├── server.js             // point d'entrée, démarre le serveur
-├── package.json
-├── README.md
-├── controllers/
-│   └── pizzas.js         // logique métier + validation + codes HTTP
-├── docs/                 // documentation technique (à compléter, Swagger à venir)
-├── middleware/
-│   └── errorHandler.js   // 404 + gestion centralisée des erreurs 500
-├── models/
-│   └── pizza.js          // accès aux données (en mémoire pour l'instant)
-└── routes/
-    └── pizzas.js         // définition des routes de la ressource /api/pizzas
+foodtruck-api/
+│   .env.example                   # Variables d'environnement non sensibles (à copier en .env)
+│   .gitignore                     # Exclusion node_modules, .env, data/
+│   app.js                         # Configuration de l'application Express
+│   server.js                      # Point d'entrée : démarre l'écoute du serveur
+│   package.json
+│   README.md
+│
+├───config/
+│       database.js                # Connexion + schéma + seed SQLite
+│       swagger.js                 # Configuration OpenAPI/Swagger
+│
+├───entities/                      # Couche de données
+│       Pizza.js                   # Entité métier + persistance (CRUD)
+│
+├───controllers/                   # Couche métier
+│       pizzaController.js         # Validation + logique + codes HTTP
+│
+├───routes/                        # Couche de présentation
+│       router.js                  # Routage de base
+│       pizzas.js                  # Routage + validation + doc Swagger de la ressource
+│
+├───middleware/
+│       errorHandler.js            # 404 + gestion d'erreurs génériques
+│
+└───docs/                          # Documentation technique
+        api.md                     # Détail des endpoints
+        ProjectSetup.md            # Mise en place du projet
+        modele-de-donnees.md       # MCD / MLD de la ressource pizzas
 ```
 
-## Modèle de données (MLD simplifié)
+## Modèle de données (MCD/MLD)
 
-**PIZZAS**(<u>id</u>, title, image, ingredients, price)
-- `id` : entier, clé primaire
-- `title` : texte, unique
-- `image` : texte, nullable (URL)
-- `ingredients` : liste de textes (pas de table intermédiaire à ce stade)
-- `price` : nombre décimal, positif
+Voir [`../../../../IdeaProjects/I321-Roux_Loic/docs/modele-de-donnees.md`](../../../../IdeaProjects/I321-Roux_Loic/docs/modele-de-donnees.md).
 
-## Routes disponibles
+En résumé : une **Pizza** est associée en **N à N** à des **Ingredient**s (une pizza
+a 0 à plusieurs ingrédients, un ingrédient peut apparaître sur plusieurs pizzas),
+via une table intermédiaire `pizzas_ingredients`. L'API expose ces ingrédients sous
+forme de texte lisible (`ingredients: "A, B, C"`) pour rester compatible avec le
+résultat attendu par l'énoncé, mais accepte un tableau de chaînes en entrée (POST/PUT).
 
-Toutes les routes sont préfixées par `/api/pizzas`.
+## Documentation de l'API
 
-| Verbe HTTP | Chemin | Description | Codes retour |
-|---|---|---|---|
-| GET | `/api/pizzas` | Lister toutes les pizzas | 200 |
-| GET | `/api/pizzas/:id` | Afficher une seule pizza | 200, 404 |
-| POST | `/api/pizzas` | Ajouter une nouvelle pizza | 201, 400, 409 |
-| PUT | `/api/pizzas/:id` | Mettre à jour une pizza (prix, ingrédients, ...) | 200, 400, 404, 409 |
-| DELETE | `/api/pizzas/:id` | Supprimer une pizza de la carte | 204, 404 |
+Voir [`../../../../IdeaProjects/I321-Roux_Loic/docs/api.md`](../../../../IdeaProjects/I321-Roux_Loic/docs/api.md) pour le détail de tous les endpoints, ou
+la documentation Swagger générée automatiquement (`/api-docs`).
 
-### Payload attendu (POST / PUT)
+## Git flow
 
-```json
-{
-  "title": "La Diavola",
-  "image": null,
-  "ingredients": ["Merguez", "Salami piquant", "Poivrons", "Oignons rouge", "Mozzarella fior di latte"],
-  "price": 19
-}
-```
-
-- `title` : requis (POST), unique
-- `price` : requis, nombre > 0
-- `ingredients` : requis, tableau non vide de chaînes
-- `image` : optionnel, chaîne ou `null`
-
-## Exemples d'appels
+Ce projet a été développé sur une branche dédiée, créée avec :
 
 ```bash
-# Lister les pizzas
-curl localhost:3000/api/pizzas
-
-# Afficher une pizza
-curl localhost:3000/api/pizzas/1
-
-# Créer une pizza
-curl -X POST localhost:3000/api/pizzas \
-  -H "Content-Type: application/json" \
-  -d '{"title":"La Diavola","ingredients":["Merguez","Salami piquant"],"price":19}'
-
-# Mettre à jour le prix d'une pizza
-curl -X PUT localhost:3000/api/pizzas/1 \
-  -H "Content-Type: application/json" \
-  -d '{"price":14}'
-
-# Supprimer une pizza
-curl -X DELETE localhost:3000/api/pizzas/2
-
-# Route ou ressource inexistante
-curl -i localhost:3000/users
-# HTTP/1.1 404 Not Found
+git flow feature start pizzas
 ```
-
-## Prochaines étapes
-
-- Remplacer le stockage en mémoire (`models/pizza.js`) par Sequelize + MySQL,
-  sans impacter `../../OneDrive - Education Vaud/Bureau/MyAPI/controllers` ni `../../OneDrive - Education Vaud/Bureau/MyAPI/routes`.
-- Documenter les routes avec Swagger.
-- Gérer la fonctionnalité "pizza du moment" (hors périmètre actuel).
