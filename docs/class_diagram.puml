@@ -1,0 +1,38 @@
+@startuml
+title Products API - Class Diagram
+
+class Product {
+  +int id
+  +string name
+  +string description
+  +string imageUrl
+  +float price
+  +string created_at
+  +string updated_at
+  +static create(obj) : Promise<Product>
+  +static findAll() : Promise<Product[]>
+  +static findById(id) : Promise<Product|null>
+  +static update(id, obj) : Promise<Product|null>
+  +static delete(id) : Promise<number>
+}
+
+class ProductController {
+  +create(req, res)
+  +findAll(req, res)
+  +findOne(req, res)
+  +update(req, res)
+  +delete(req, res)
+}
+
+class Router {
+  +GET /api/products
+  +POST /api/products
+  +GET /api/products/:id
+  +PUT /api/products/:id
+  +DELETE /api/products/:id
+}
+
+ProductController -- Product : uses >
+Router --> ProductController : routes to >
+
+@enduml
