@@ -1,85 +1,106 @@
-# Products API
+# Pizzeria API – microservices
 
-A simple RESTful API to manage products (CRUD) built with **Express**, **SQLite3**, **express-validator**, and documented with **Swagger UI**.
+Two independent microservices built with **Express**, **SQLite3**, **express-validator** and documented with **Swagger UI**.
+Each service has **its own web server and its own database**, so they can run on different nodes.
+
+| Service               | Default port | Database             | Resources                                      |
+|-----------------------|--------------|----------------------|------------------------------------------------|
+| `ingredients-service` | 3001         | `ingredients.sqlite` | `ingredients`                                  |
+| `pizzas-service`      | 3000         | `pizzas.sqlite`      | `pizzas`, `product_compositions` (composition) |
+
+The pizzas service knows nothing about the ingredients table: `product_compositions.ingredient_id` is a
+remote reference, validated and resolved over HTTP against the ingredients service (`INGREDIENTS_API_URL`).
 
 ---
 
 ## Requirements
 
-- **Node.js**: v18.x or higher
+- **Node.js**: v18.x or higher (uses the global `fetch`)
 - **npm**: v9.x or higher
-
-*(older versions may work but are not tested)*
-
----
 
 ## Project structure
 
 ```bash
-│   .env
-│   .gitignore
-│   dev.sqlite
-│   package-lock.json
-│   package.json
-│   README.md
-│
 ├───docs
 │       class_diagram.puml
-│
-└───src
-    │   app.js
-    │   server.js
-    │
-    ├───config
-    │       database.js
-    │       swagger.js
-    │
-    ├───controllers
-    │       productController.js
-    │
-    ├───entities
-    │       Product.js
-    │
-    └───routes
-            products.js
-            router.js
+├───ingredients-service
+│   │   .env.example
+│   │   package.json
+│   └───src
+│       ├───config        database.js, swagger.js
+│       ├───controllers   ingredientsController.js
+│       ├───entities      Ingredient.js
+│       └───routes        ingredients.js, router.js
+└───pizzas-service
+    │   .env.example
+    │   package.json
+    └───src
+        ├───config        database.js, swagger.js
+        ├───controllers   pizzaController.js
+        ├───entities      Pizza.js, ProductComposition.js
+        ├───routes        pizzas.js, router.js
+        └───services      pizzaService.js, ingredientsClient.js
 ```
 
 ## Installation
 
-Clone the repository, then install dependencies:
+From the root (npm workspaces, installs both services):
 
 ```bash
 npm install
 ```
 
-## Development
-
-Start the server in dev mode (with auto-reload via nodemon):
+Or on a dedicated node, inside a single service folder:
 
 ```bash
-npm run dev
+cd pizzas-service && npm install
 ```
 
-Start the server normally:
+Copy `.env.example` to `.env` in each service and adapt it.
+
+## Running
 
 ```bash
-npm start
+npm run dev:ingredients   # http://localhost:3001  – Swagger: /docs
+npm run dev:pizzas        # http://localhost:3000  – Swagger: /docs
 ```
 
-## Usage
-
-API base URL: http://localhost:3000/api
-
-Swagger UI docs: http://localhost:3000/docs
+(`npm start` inside a service folder starts it without nodemon.)
 
 ## Environment
 
-The .env file defines:
+`ingredients-service/.env`
 
 ```bash
-PORT=3000
-DB_FILE=./dev.sqlite
+PORT=3001
+DB_FILE=./ingredients.sqlite
 NODE_ENV=development
 ```
 
+`pizzas-service/.env`
+
+```bash
+PORT=3000
+DB_FILE=./pizzas.sqlite
+NODE_ENV=development
+INGREDIENTS_API_URL=http://localhost:3001/api/v1   # address of the ingredients node
+INGREDIENTS_API_TIMEOUT_MS=3000
+```
+
+## Endpoints
+
+Ingredients service – `/api/v1/ingredients` : `GET`, `POST`, `GET /:id`, `PUT /:id`, `DELETE /:id`
+
+Pizzas service – `/api/v1/pizzas` : `GET`, `POST`, `GET /:id`, `PUT /:id`, `DELETE /:id`
+
+Pizza composition (pizzas service, calls the ingredients service):
+
+| Method   | Route                                         | Body                              | Notes                                         |
+|----------|-----------------------------------------------|-----------------------------------|-----------------------------------------------|
+| `GET`    | `/api/v1/pizzas/:id/ingredients`              |                                   | ingredients details fetched remotely          |
+| `POST`   | `/api/v1/pizzas/:id/ingredients`              | `{ "ingredientId": 1, "quantity": 2 }` | 422 if the ingredient doesn't exist, 409 if already present |
+| `PUT`    | `/api/v1/pizzas/:id/ingredients/:ingredientId`| `{ "quantity": 3 }`               |                                               |
+| `DELETE` | `/api/v1/pizzas/:id/ingredients/:ingredientId`|                                   |                                               |
+
+If the ingredients service cannot be reached, composition endpoints answer **503**.
+Deleting a pizza deletes its compositions (`ON DELETE CASCADE`).

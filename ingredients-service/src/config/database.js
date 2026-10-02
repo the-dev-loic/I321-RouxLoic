@@ -3,7 +3,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 require('dotenv').config();
 
-const dbFile = process.env.DB_FILE || path.join(__dirname, '..', 'dev.sqlite');
+const dbFile = process.env.DB_FILE || path.join(__dirname, '..', '..', 'ingredients.sqlite');
 
 const db = new sqlite3.Database(dbFile, (err) => {
     if (err) {
@@ -13,9 +13,9 @@ const db = new sqlite3.Database(dbFile, (err) => {
     console.log('Connected to sqlite database:', dbFile);
 });
 
-// Initialize products table if not exists
+// Initialize ingredients table if not exists
 const initSql = `
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS ingredients (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   description TEXT,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS products (
 `;
 
 db.serialize(() => {
-    db.run(initSql, (err) => {
+    db.exec(initSql, (err) => {
         if (err) {
             console.error('Failed to initialize database', err);
             process.exit(1);

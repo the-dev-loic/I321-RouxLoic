@@ -1,24 +1,17 @@
 {
-  "name": "foodtruck-api",
+  "name": "pizzeria-microservices",
   "version": "1.0.0",
-  "description": "API REST - Ressource Pizzas (Projet Foodtruck I321)",
-  "main": "server.js",
+  "private": true,
+  "description": "Pizzas and ingredients microservices, each with its own web server and database",
+  "workspaces": [
+    "ingredients-service",
+    "pizzas-service"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start:ingredients": "npm start -w ingredients-service",
+    "start:pizzas": "npm start -w pizzas-service",
+    "dev:ingredients": "npm run dev -w ingredients-service",
+    "dev:pizzas": "npm run dev -w pizzas-service"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "express-validator": "^7.3.2",
-    "sqlite3": "^6.0.1",
-    "swagger-jsdoc": "^6.3.0",
-    "swagger-ui-express": "^5.0.1"
-  }
+  "license": "ISC"
 }

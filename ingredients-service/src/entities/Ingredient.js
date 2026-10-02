@@ -1,9 +1,9 @@
-// entities/Product.js
+// entities/Ingredient.js
 const db = require('../config/database');
 
-class Product {
+class Ingredient {
     static create({ name, description, imageUrl, price }) {
-        const sql = `INSERT INTO products (name, description, imageUrl, price, created_at, updated_at)
+        const sql = `INSERT INTO ingredients (name, description, imageUrl, price, created_at, updated_at)
                  VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`;
         const params = [name, description || null, imageUrl || null, price];
 
@@ -11,13 +11,13 @@ class Product {
             db.run(sql, params, function (err) {
                 if (err) return reject(err);
                 // fetch created row
-                Product.findById(this.lastID).then(resolve).catch(reject);
+                Ingredient.findById(this.lastID).then(resolve).catch(reject);
             });
         });
     }
 
     static findAll() {
-        const sql = `SELECT * FROM products ORDER BY id DESC`;
+        const sql = `SELECT * FROM ingredients ORDER BY id DESC`;
         return new Promise((resolve, reject) => {
             db.all(sql, [], (err, rows) => {
                 if (err) return reject(err);
@@ -27,7 +27,7 @@ class Product {
     }
 
     static findById(id) {
-        const sql = `SELECT * FROM products WHERE id = ?`;
+        const sql = `SELECT * FROM ingredients WHERE id = ?`;
         return new Promise((resolve, reject) => {
             db.get(sql, [id], (err, row) => {
                 if (err) return reject(err);
@@ -38,7 +38,7 @@ class Product {
 
     static update(id, { name, description, imageUrl, price }) {
         const sql = `
-      UPDATE products
+      UPDATE ingredients
       SET name = COALESCE(?, name),
           description = COALESCE(?, description),
           imageUrl = COALESCE(?, imageUrl),
@@ -52,13 +52,13 @@ class Product {
             db.run(sql, params, function (err) {
                 if (err) return reject(err);
                 if (this.changes === 0) return resolve(null);
-                Product.findById(id).then(resolve).catch(reject);
+                Ingredient.findById(id).then(resolve).catch(reject);
             });
         });
     }
 
     static delete(id) {
-        const sql = `DELETE FROM products WHERE id = ?`;
+        const sql = `DELETE FROM ingredients WHERE id = ?`;
         return new Promise((resolve, reject) => {
             db.run(sql, [id], function (err) {
                 if (err) return reject(err);
@@ -68,4 +68,4 @@ class Product {
     }
 }
 
-module.exports = Product;
+module.exports = Ingredient;

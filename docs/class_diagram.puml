@@ -1,38 +1,89 @@
 @startuml
-title Products API - Class Diagram
+title Pizzeria microservices - Class Diagram
 
-class Product {
-  +int id
-  +string name
-  +string description
-  +string imageUrl
-  +float price
-  +string created_at
-  +string updated_at
-  +static create(obj) : Promise<Product>
-  +static findAll() : Promise<Product[]>
-  +static findById(id) : Promise<Product|null>
-  +static update(id, obj) : Promise<Product|null>
-  +static delete(id) : Promise<number>
+package "ingredients-service (DB: ingredients.sqlite)" {
+  class Ingredient {
+    +int id
+    +string name
+    +string description
+    +string imageUrl
+    +float price
+    +string created_at
+    +string updated_at
+    +static create(obj) : Promise<Ingredient>
+    +static findAll() : Promise<Ingredient[]>
+    +static findById(id) : Promise<Ingredient|null>
+    +static update(id, obj) : Promise<Ingredient|null>
+    +static delete(id) : Promise<number>
+  }
+
+  class IngredientsController {
+    +create(req, res)
+    +findAll(req, res)
+    +findOne(req, res)
+    +update(req, res)
+    +delete(req, res)
+  }
+
+  IngredientsController --> Ingredient : uses >
 }
 
-class ProductController {
-  +create(req, res)
-  +findAll(req, res)
-  +findOne(req, res)
-  +update(req, res)
-  +delete(req, res)
+package "pizzas-service (DB: pizzas.sqlite)" {
+  class Pizza {
+    +int id
+    +string name
+    +string description
+    +string imageUrl
+    +float price
+    +string created_at
+    +string updated_at
+    +static create(obj) : Promise<Pizza>
+    +static findAll() : Promise<Pizza[]>
+    +static findById(id) : Promise<Pizza|null>
+    +static update(id, obj) : Promise<Pizza|null>
+    +static delete(id) : Promise<number>
+  }
+
+  class ProductComposition <<product_compositions>> {
+    +int id
+    +int pizza_id
+    +int ingredient_id
+    +int quantity
+    +static findByPizzaId(pizzaId)
+    +static find(pizzaId, ingredientId)
+    +static create(obj)
+    +static update(pizzaId, ingredientId, obj)
+    +static delete(pizzaId, ingredientId)
+  }
+
+  class PizzaController {
+    +create / findAll / findOne / update / delete
+    +getIngredients(req, res)
+    +addIngredient(req, res)
+    +updateIngredient(req, res)
+    +removeIngredient(req, res)
+  }
+
+  class PizzaService {
+    +getComposition(pizzaId)
+    +addIngredient(pizzaId, obj)
+    +updateIngredient(pizzaId, ingredientId, obj)
+    +removeIngredient(pizzaId, ingredientId)
+  }
+
+  class IngredientsClient {
+    +findById(id) : Promise<object|null>
+  }
+
+  Pizza "1" *-- "0..*" ProductComposition : ON DELETE CASCADE
+  PizzaController --> Pizza : uses >
+  PizzaController --> PizzaService : uses >
+  PizzaService --> Pizza
+  PizzaService --> ProductComposition
+  PizzaService --> IngredientsClient
 }
 
-class Router {
-  +GET /api/products
-  +POST /api/products
-  +GET /api/products/:id
-  +PUT /api/products/:id
-  +DELETE /api/products/:id
-}
-
-ProductController -- Product : uses >
-Router --> ProductController : routes to >
+IngredientsClient ..> IngredientsController : HTTP GET /api/v1/ingredients/:id
+ProductComposition ..> Ingredient : ingredient_id (remote reference)
 
 @enduml

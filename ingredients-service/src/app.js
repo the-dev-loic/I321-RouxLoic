@@ -21,7 +21,7 @@ app.get('/docs/swagger.json', (req, res) => {
 });
 
 // basic health-check
-app.get('/', (req, res) => res.json({ status: 'ok' }));
+app.get('/', (req, res) => res.json({ service: 'ingredients', status: 'ok' }));
 
 // error handler (fallback)
 app.use((err, req, res, next) => {
